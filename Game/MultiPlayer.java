@@ -1,0 +1,132 @@
+
+package Game;
+
+import Objects.*;
+
+import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.util.TimerTask;
+
+public class MultiPlayer extends Menu implements BallFeedBack {
+
+    private Ball myBall;
+    private Paddle leftPad, rightPad;
+    boolean bLeftUp = false, bLeftDown = false, bRightUp = false, bRightDown = false, inPlay = false;
+    private int timeLeft = 3;
+    private int playTo = 8;
+    private Dimension frame;
+
+    private int leftScore, rightScore;
+    private boolean gameOver = false;
+
+    public MultiPlayer(Dimension d) {
+        super(d);
+        frame = d;
+        leftPad = new Paddle(frame, false);
+        rightPad = new Paddle(frame, true);
+        countDown(5);
+    }
+
+    public void logic() {
+        if (inPlay) {
+            myBall.move();
+            myBall.bounce(leftPad, rightPad);
+        }
+
+        if (bLeftUp) {
+            leftPad.moveUp();
+        } else if (bLeftDown) {
+            leftPad.moveDown();
+        }
+        if (bRightUp) {
+            rightPad.moveUp();
+        } else if (bRightDown) {
+            rightPad.moveDown();
+        }
+    }
+
+    public void draw(Graphics2D g2) {
+        if(!gameOver) {
+            if (inPlay)
+                myBall.draw(g2);
+            leftPad.draw(g2);
+            rightPad.draw(g2);
+
+            g2.setFont(new Font("Calibri", Font.BOLD, 21));
+            g2.setColor(Color.white);
+            if (!inPlay) {
+                g2.drawString("" + timeLeft, (frame.width / 2) - (g2.getFontMetrics().stringWidth("" + timeLeft) / 2), (frame.height / 2) - g2.getFontMetrics().getHeight());
+            } else {
+                g2.drawString("" + leftScore, (frame.width / 2) - g2.getFontMetrics().stringWidth("" + leftScore), 20 + g2.getFontMetrics().getHeight());
+                g2.drawString("" + rightScore, (frame.width / 2) + g2.getFontMetrics().stringWidth("" + rightScore), 20 + g2.getFontMetrics().getHeight());
+            }
+        } else {
+            int push = (frame.height/2) - 40;
+            drawString((rightScore >= playTo ? "Right" : "Left") + " Player Wins!", "#ffffff", push, 21, g2);
+            drawString(leftScore + " - " + rightScore, "#ffffff", push + 18, 18, g2);
+            drawString("press \"q\" to continue", "#3B3B3B", push + 32, 11, g2);
+        }
+    }
+
+    public void keyPressed(KeyEvent e) {
+        char key = e.getKeyChar();
+        if ((key == 'a') || (key == 'A')) {
+            bLeftUp = true;
+        } else if ((key == 'z') || (key == 'Z')) {
+            bLeftDown = true;
+        }
+        if ((key == 'k') || (key == 'K')) {
+            bRightUp = true;
+        } else if ((key == 'm') || (key == 'M')) {
+            bRightDown = true;
+        }
+        if((key == 'q' || key == 'Q') && gameOver)
+            notifyChangeMenu(new MainMenu(frame));
+    }
+
+    public void keyReleased(KeyEvent e) {
+        char key = e.getKeyChar();
+        if ((key == 'a') || (key == 'A')) {
+            bLeftUp = false;
+        } else if ((key == 'z') || (key == 'Z')) {
+            bLeftDown = false;
+        }
+        if ((key == 'k') || (key == 'K')) {
+            bRightUp = false;
+        } else if ((key == 'm') || (key == 'M')) {
+            bRightDown = false;
+        }
+    }
+
+    private void createBall()
+    {
+        myBall = new Ball(frame);
+        myBall.notifyFeedBack(this);
+    }
+
+    public void hitWall(boolean side) {
+        inPlay = false;
+        if (!side)
+            rightScore++;
+        else
+            leftScore++;
+        if(rightScore >= playTo || leftScore >= playTo) {
+            gameOver = true;
+        } else
+        countDown(3);
+    }
+
+    private void countDown(int time) {
+        timeLeft = time + 1;
+        createBall();
+        new java.util.Timer().schedule(new TimerTask() {
+            public void run() {
+                timeLeft--;
+                if (timeLeft == 0) {
+                    inPlay = true;
+                    this.cancel();
+                }
+            }
+        }, 0, 1000);
+    }
+}
